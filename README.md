@@ -38,7 +38,18 @@
 
 ---
 
-## 설치
+## 실행 방법 A — 브라우저만으로 (크롬북 권장)
+
+터미널이 없어도 Google Colab에서 그대로 돌릴 수 있다. `colab.ipynb` 하나면 된다.
+
+1. 이 저장소에서 `colab.ipynb` 를 연다 → 오른쪽 위 **Download raw file**
+2. https://colab.research.google.com 접속 → **업로드** 탭 → 방금 받은 파일 선택
+3. 위에서부터 셀의 ▶ 버튼을 순서대로 누른다
+
+설치·설계 점검·모의 실행·실측 분석·결과 내려받기까지 노트북 안에 다 들어 있다.
+한글 폰트도 자동으로 깔아서 그래프 라벨이 한글로 나온다.
+
+## 실행 방법 B — 로컬 터미널
 
 ```bash
 pip install -r requirements.txt
