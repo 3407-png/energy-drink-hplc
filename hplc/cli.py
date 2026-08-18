@@ -16,7 +16,7 @@ from pathlib import Path
 
 from . import analysis as an
 from . import dataio, plots, report
-from .config import COMPOUND_ORDER, COMPOUNDS, DRINKS, HPLC, PREP
+from .config import COMPOUND_ORDER, COMPOUNDS, DRINKS, HPLC, PREP, VOID_TIME_MIN
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_DATA = ROOT / "data"
@@ -46,21 +46,33 @@ def cmd_design_check(args) -> int:
     print()
 
     print("[1] 예상 머무름 시간 및 분리")
+    print(f"    컬럼 공극 시간 t0 = {VOID_TIME_MIN:.1f} 분 (추정)")
     ordered = [COMPOUNDS[k] for k in COMPOUND_ORDER]
     for c in ordered:
         pka = f"pKa {c.pka}" if c.pka is not None else "비이온성"
+        k_prime = (c.expected_rt_min - VOID_TIME_MIN) / VOID_TIME_MIN
         print(
             f"  {c.name_ko:<12} RT ~{c.expected_rt_min:>4.1f} 분  "
-            f"λmax {c.lambda_max_nm:>5.0f} nm  ({pka})"
+            f"k' {k_prime:>4.1f}  λmax {c.lambda_max_nm:>5.0f} nm  ({pka})"
         )
+        if k_prime < 1.0:
+            print(
+                "               ⚠ k' < 1 — 컬럼에 거의 붙잡히지 않습니다. "
+                "공극 근처에서 나오는 매트릭스 성분과 겹칠 위험이 큽니다."
+            )
     for a, b in zip(ordered, ordered[1:]):
         gap = b.expected_rt_min - a.expected_rt_min
         flag = "여유 있음" if gap >= 0.8 else "겹칠 위험 — 분리능 확인 필요"
         print(f"  · {a.name_ko} ↔ {b.name_ko}: 간격 {gap:.1f} 분 ({flag})")
     print()
-    print(f"  참고: 검출 파장 {HPLC.detection_nm:.0f} nm 는 세 성분의 절충값입니다.")
+    print(f"  참고: 검출 파장 {HPLC.detection_nm:.0f} nm 는 두 성분의 절충값입니다.")
     print("        카페인 λmax 는 273 nm 이므로 230 nm 에서는 감도가 손해입니다.")
-    print("        PDA 검출기를 쓸 수 있으면 성분별 최적 파장을 따로 추출하세요.")
+    print("        분석 성분이 2종으로 줄었으므로, PDA 를 쓸 수 있다면")
+    print("        카페인 273 nm / 소듐벤조에이트 225 nm 로 따로 뽑는 편이 낫습니다.")
+    print()
+    print("  ⚠ 위 머무름 시간은 이동상 70:30 조건의 추정값입니다.")
+    print("     첫 크로마토그램을 받으면 config.py 의 expected_rt_min 을")
+    print("     실측값으로 바꾸세요. 피크 동정 점검 기준이 됩니다.")
     print()
 
     print("[2] 표준물 첨가 농도 적정성")
@@ -85,9 +97,14 @@ def cmd_design_check(args) -> int:
         v = PREP.spike_volume_mL(spike)
         print(f"    +{spike:>3.0f} ppm  →  {PREP.stock_ppm:.0f} ppm 표준액 {v:.2f} mL")
     print()
+    n_cmp = len(COMPOUND_ORDER)
+    n_vials = len(DRINKS) * len(PREP.spike_levels_ppm) + len(PREP.spike_levels_ppm)
     print("[4] 놓치기 쉬운 것")
-    print("    · 표준액을 성분별로 따로 만들면 바이알 수가 3배가 됩니다.")
-    print("      3성분 혼합 표준액 1종으로 만들면 한 세트로 끝납니다.")
+    print(f"    · 표준액을 성분별로 따로 만들면 바이알 수가 {n_cmp}배가 됩니다.")
+    print(f"      {n_cmp}성분 혼합 표준액 1종으로 만들면 한 세트로 끝납니다.")
+    print(f"      (혼합 표준액 기준 총 바이알 {n_vials}개 = 검량선 "
+          f"{len(PREP.spike_levels_ppm)} + 음료 {len(DRINKS)}종 x "
+          f"{len(PREP.spike_levels_ppm)})")
     print("    · 모든 바이알의 음료 원액 양(1 mL)은 정확히 같아야 합니다.")
     print("      이게 어긋나면 x절편 역산 전제가 깨집니다.")
     print("    · 탄산 제거 전후로 부피가 변하므로, 탈기 후에 분취하세요.")

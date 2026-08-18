@@ -12,7 +12,7 @@ import pytest
 
 from hplc import analysis as an
 from hplc import dataio
-from hplc.config import PREP
+from hplc.config import COMPOUNDS, DRINKS, PREP
 from hplc.simulate import (
     SimulationSettings,
     TRUE_DRINK_PPM,
@@ -93,7 +93,8 @@ def analyzed():
 
 def test_all_drink_compound_pairs_present(analyzed):
     _, results = analyzed
-    assert len(results) == 9  # 음료 3 x 성분 3
+    # 시료/성분 구성이 바뀌어도 따라오도록 config 에서 기대값을 만든다
+    assert len(results) == len(DRINKS) * len(COMPOUNDS)
 
 
 def test_calibration_linearity(analyzed):
@@ -267,5 +268,5 @@ def test_missing_calibration_raises():
 
 def test_truth_table_shape():
     t = truth_table()
-    assert len(t) == 9
+    assert len(t) == len(DRINKS) * len(COMPOUNDS)
     assert {"true_drink_ppm", "matrix_response", "additive_offset_area"} <= set(t.columns)

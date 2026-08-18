@@ -5,8 +5,8 @@ HPLC 소프트웨어에서 내보낸 결과를 아래 형식의 CSV 한 장으�
     group,sample,compound,spike_ppm,injection,retention_min,peak_area
 
   group        : calib(검량선용, 증류수 바탕) 또는 sample(음료 바탕)
-  sample       : calib 이면 STD, sample 이면 monster / hotsix / wisely
-  compound     : acesulfame_k / caffeine / sodium_benzoate
+  sample       : calib 이면 STD, sample 이면 monster / netflix / wisely
+  compound     : caffeine / sodium_benzoate
   spike_ppm    : 그 바이알에 첨가한 표준물질 농도 (0, 20, 40, 60)
   injection    : 같은 바이알의 몇 번째 주입인지 (1부터)
   retention_min: 실측 머무름 시간 (분). 모르면 비워둬도 됨

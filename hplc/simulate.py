@@ -40,6 +40,7 @@ from .config import (
     HPLC,
     PREP,
     SAMPLE_GROUP,
+    VOID_TIME_MIN,
 )
 
 SIM_BANNER = [
@@ -57,37 +58,35 @@ SIM_BANNER = [
 
 # 순수 용매에서의 응답계수 (면적 단위 / ppm). 230 nm 흡광 세기 차이를 반영.
 RESPONSE_FACTOR: dict[str, float] = {
-    "acesulfame_k": 28_000.0,
     "caffeine": 21_000.0,
     "sodium_benzoate": 34_000.0,
 }
 
 # 검량선 y절편 (적분 바탕선 오프셋). 이상적으로는 0 근처.
 CALIB_INTERCEPT: dict[str, float] = {
-    "acesulfame_k": 1_200.0,
     "caffeine": 900.0,
     "sodium_benzoate": 1_500.0,
 }
 
 # 음료 원액 중 '참' 농도 (ppm = mg/L) — 가정값
 TRUE_DRINK_PPM: dict[str, dict[str, float]] = {
-    "monster":  {"acesulfame_k": 150.0, "caffeine": 282.0, "sodium_benzoate": 250.0},
-    "hotsix":   {"acesulfame_k": 200.0, "caffeine": 300.0, "sodium_benzoate": 300.0},
-    "wisely":   {"acesulfame_k": 120.0, "caffeine": 340.0, "sodium_benzoate": 180.0},
+    "monster":  {"caffeine": 282.0, "sodium_benzoate": 250.0},
+    "netflix":  {"caffeine": 300.0, "sodium_benzoate": 220.0},
+    "wisely":   {"caffeine": 340.0, "sodium_benzoate": 180.0},
 }
 
 # 곱셈형 매트릭스 효과 (1.0 = 영향 없음)
 MATRIX_RESPONSE: dict[str, dict[str, float]] = {
-    "monster":  {"acesulfame_k": 0.96, "caffeine": 0.93, "sodium_benzoate": 0.98},
-    "hotsix":   {"acesulfame_k": 0.91, "caffeine": 0.88, "sodium_benzoate": 0.95},
-    "wisely":   {"acesulfame_k": 0.99, "caffeine": 0.97, "sodium_benzoate": 1.02},
+    "monster":  {"caffeine": 0.93, "sodium_benzoate": 0.98},
+    "netflix":  {"caffeine": 0.89, "sodium_benzoate": 0.95},
+    "wisely":   {"caffeine": 0.97, "sodium_benzoate": 1.02},
 }
 
 # 덧셈형 공용리 간섭이 더해 놓는 면적 (리보플라빈/유기산 등)
 ADDITIVE_OFFSET: dict[str, dict[str, float]] = {
-    "monster":  {"acesulfame_k": 8_000.0,  "caffeine": 12_000.0, "sodium_benzoate": 3_000.0},
-    "hotsix":   {"acesulfame_k": 15_000.0, "caffeine": 26_000.0, "sodium_benzoate": 5_000.0},
-    "wisely":   {"acesulfame_k": 4_000.0,  "caffeine": 6_000.0,  "sodium_benzoate": 2_000.0},
+    "monster":  {"caffeine": 12_000.0, "sodium_benzoate": 3_000.0},
+    "netflix":  {"caffeine": 22_000.0, "sodium_benzoate": 4_500.0},
+    "wisely":   {"caffeine": 6_000.0,  "sodium_benzoate": 2_000.0},
 }
 
 # 잡음
@@ -240,9 +239,9 @@ def simulate_chromatogram(
     signal = np.zeros_like(t)
     peaks: list[dict] = []
 
-    # 용매 피크 (void volume)
-    t0 = 1.2
-    signal += _gaussian(t, t0, 9_000.0, 0.18)
+    # 용매 피크 (컬럼 공극 시간)
+    t0 = VOID_TIME_MIN
+    signal += _gaussian(t, t0, 9_000.0, 0.20)
     peaks.append({"name": "용매 피크", "name_en": "solvent front", "rt": t0,
                   "target": False})
 
@@ -264,12 +263,14 @@ def simulate_chromatogram(
 
     # 매트릭스 유래 방해 피크 (음료 시료에만)
     if drink_key is not None and st.include_additive:
+        # 70:30 조건에서는 매트릭스 성분도 전부 앞으로 당겨진다.
+        # 리보플라빈은 카페인(3.8분) 바로 앞에 붙어 공용리 위험이 가장 큰 성분이다.
         matrix_peaks = [
-            ("유기산류", "organic acids", 1.6, 30_000.0, 0.22),
-            ("리보플라빈", "riboflavin", 3.9, 18_000.0, 0.16),
-            ("향료 성분", "flavor cmpd.", 6.4, 12_000.0, 0.25),
+            ("유기산류", "organic acids", 2.7, 30_000.0, 0.22),
+            ("리보플라빈", "riboflavin", 3.5, 18_000.0, 0.16),
+            ("향료 성분", "flavor cmpd.", 6.8, 12_000.0, 0.28),
         ]
-        scale = {"monster": 1.0, "hotsix": 1.7, "wisely": 0.45}.get(drink_key, 1.0)
+        scale = {"monster": 1.0, "netflix": 1.7, "wisely": 0.45}.get(drink_key, 1.0)
         for name, name_en, rt, area, width in matrix_peaks:
             signal += _gaussian(t, rt, area * scale, width)
             peaks.append({"name": name, "name_en": name_en, "rt": rt,

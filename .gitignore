@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 output/
 .pytest_cache/
+data/SIMULATED_*.csv

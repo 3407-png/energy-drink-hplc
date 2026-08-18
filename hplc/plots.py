@@ -70,6 +70,7 @@ def _cname(cmp_key: str) -> str:
 
 
 # 성분별 고정 색 (모든 그림에서 동일하게 유지)
+# acesulfame_k 는 현재 분석 대상이 아니지만, 다시 넣을 때 색이 바뀌지 않도록 남겨 둔다.
 COLORS = {
     "acesulfame_k": "#2E7D8F",
     "caffeine": "#C05746",

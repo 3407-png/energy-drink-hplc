@@ -1,8 +1,25 @@
 # 제로 에너지 드링크 HPLC 동시분석 — 표준물 첨가법 정량 도구
 
-카페인 · 소듐벤조에이트 · 아세설팜칼륨 3종을 HPLC-UV로 동시분석하고,
+카페인 · 소듐벤조에이트 2종을 HPLC-UV로 동시분석하고,
 표준물 첨가법의 x절편 역산으로 매트릭스 간섭이 보정된 실제 농도와
 변환 상수를 계산한다.
+
+## 현재 실험 조건
+
+| 항목 | 값 |
+|---|---|
+| 분석 성분 | 카페인, 소듐 벤조에이트 |
+| 시료 | 몬스터 에너지 울트라, 넷플릭스 에너지 드링크, 와이즐리 에너지 제로 슈가 |
+| 용리 모드 | LPGE (저압 그래디언트 펌프, 등용매 조성) |
+| 이동상 | 0.1% 인산 수용액 : 아세토나이트릴 = 70 : 30 |
+| 유량 / 오븐 | 1.0 mL/min / 40 °C |
+| 검출 파장 | 230 nm |
+| Run time | 15 분 |
+| 주입 횟수 | 검량선 1회, 음료 시료 4회 |
+| 전처리 | 원액 1 mL → 10 mL 정용 (희석 10배), 0.45 µm 여과 |
+| 첨가 농도 | 0 / 20 / 40 / 60 ppm |
+
+조건이 또 바뀌면 `hplc/config.py` 하나만 고치면 코드 전체가 따라온다.
 
 ---
 
@@ -37,7 +54,7 @@ Python 3.10 이상이 필요하다.
 python -m hplc design-check
 ```
 
-- 세 성분의 예상 머무름 시간과 피크 간격
+- 두 성분의 예상 머무름 시간, 머무름 계수 k', 피크 간격
 - 첨가 농도(0/20/40/60 ppm)가 시료 농도에 비해 적절한지
 - 각 농도를 만들기 위한 1000 ppm 표준액 분취량
 - 놓치기 쉬운 전처리 실수
@@ -70,7 +87,7 @@ python -m hplc analyze data/peak_areas_template.csv
 | `report.md` | 보고서 7장에 그대로 옮길 수 있는 표 8종 + 자동 점검 결과 |
 | `results_summary.csv` | 성분별 회귀·농도·변환상수 (엑셀용) |
 | `calibration_summary.csv` | 검량선 통계, LOD/LOQ |
-| `fig_calibration_curves.png` | 외부 검량선 3종 |
+| `fig_calibration_curves.png` | 외부 검량선 (성분별) |
 | `fig_standard_addition_*.png` | 음료별 표준물 첨가법 그래프 (x절편 외삽 표시) |
 | `fig_conversion_constants.png` | 변환 상수와 매트릭스 효과 |
 | `fig_residuals.png` | 회귀 잔차 (직선성 진단) |
@@ -81,17 +98,17 @@ python -m hplc analyze data/peak_areas_template.csv
 
 ```
 group,sample,compound,spike_ppm,injection,retention_min,peak_area
-calib,STD,caffeine,0,1,3.51,912
-calib,STD,caffeine,20,1,3.52,421030
-sample,monster,caffeine,0,1,3.50,561197
-sample,monster,caffeine,0,2,3.51,558402
+calib,STD,caffeine,0,1,3.81,912
+calib,STD,caffeine,20,1,3.82,421030
+sample,monster,caffeine,0,1,3.80,561197
+sample,monster,caffeine,0,2,3.81,558402
 ```
 
 | 열 | 설명 |
 |---|---|
 | `group` | `calib`(증류수 바탕 검량선) 또는 `sample`(음료 바탕) |
-| `sample` | `STD` / `monster` / `hotsix` / `wisely` |
-| `compound` | `acesulfame_k` / `caffeine` / `sodium_benzoate` |
+| `sample` | `STD` / `monster` / `netflix` / `wisely` |
+| `compound` | `caffeine` / `sodium_benzoate` |
 | `spike_ppm` | 첨가한 표준물질 농도 (0, 20, 40, 60) |
 | `injection` | 같은 바이알의 몇 번째 주입인지 (1부터) |
 | `retention_min` | 실측 머무름 시간 (비워도 됨) |
