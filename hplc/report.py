@@ -55,15 +55,21 @@ def calibration_table(cals: dict[str, CalibrationResult]) -> str:
         cal = cals.get(key)
         if cal is None:
             continue
-        f = cal.fit
+        r2_txt = f"{cal.r2:.5f}" if math.isfinite(cal.r2) else "-"
+        if cal.source == "manual":
+            verdict = "계수 직접 입력 (직선성 미평가)"
+        elif cal.passes_linearity:
+            verdict = "적합"
+        else:
+            verdict = f"미달(<{QC.min_r2})"
         rows.append([
             cal.compound.name_ko,
-            f"{f.slope:,.0f}",
-            f"{f.intercept:,.0f}",
-            f"{f.r2:.5f}",
+            f"{cal.slope:,.0f}",
+            f"{cal.intercept:,.0f}",
+            r2_txt,
             _f(cal.lod_ppm, 2),
             _f(cal.loq_ppm, 2),
-            "적합" if cal.passes_linearity else f"미달(<{QC.min_r2})",
+            verdict,
         ])
     return _table(
         ["성분", "기울기 m (면적/ppm)", "y절편 b", "R²", "LOD (ppm)", "LOQ (ppm)", "직선성"],
@@ -344,10 +350,17 @@ def build_report(
         warnings.extend(r.warnings())
     for cal in cals.values():
         if not cal.passes_linearity:
-            warnings.append(
-                f"[검량선/{cal.compound.name_ko}] R²={cal.fit.r2:.5f} 로 "
-                f"기준({QC.min_r2}) 미달입니다."
-            )
+            if cal.source == "manual":
+                warnings.append(
+                    f"[검량선/{cal.compound.name_ko}] 검량선을 계수로 직접 입력했습니다. "
+                    "직선성·LOD/LOQ가 평가되지 않았으므로, 가능하면 CSV에 "
+                    "group=calib 행을 넣어 다시 돌리세요."
+                )
+            else:
+                warnings.append(
+                    f"[검량선/{cal.compound.name_ko}] R²={cal.r2:.5f} 로 "
+                    f"기준({QC.min_r2}) 미달입니다."
+                )
     for d in DRINKS.values():
         if not d.label_verified:
             warnings.append(
@@ -416,13 +429,14 @@ def calibration_dataframe(cals: dict[str, CalibrationResult]) -> pd.DataFrame:
         rows.append({
             "compound_key": key,
             "compound": cal.compound.name_ko,
-            "slope": cal.fit.slope,
-            "intercept": cal.fit.intercept,
-            "r2": cal.fit.r2,
-            "se_slope": cal.fit.se_slope,
-            "se_intercept": cal.fit.se_intercept,
+            "source": cal.source,
+            "slope": cal.slope,
+            "intercept": cal.intercept,
+            "r2": cal.r2,
+            "se_slope": cal.se_slope,
+            "se_intercept": cal.fit.se_intercept if cal.fit else float("nan"),
             "lod_ppm": cal.lod_ppm,
             "loq_ppm": cal.loq_ppm,
-            "n_levels": cal.fit.n,
+            "n_levels": cal.fit.n if cal.fit else 0,
         })
     return pd.DataFrame(rows)

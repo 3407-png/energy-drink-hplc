@@ -27,6 +27,7 @@ import pandas as pd
 from .config import (
     CALIB_GROUP,
     COMPOUND_ORDER,
+    EXTERNAL_CALIBRATION,
     COMPOUNDS,
     DRINKS,
     PREP,
@@ -45,46 +46,96 @@ from .stats import LinearFit, linear_fit, propagate_ratio
 
 @dataclass
 class CalibrationResult:
+    """외부 검량선.
+
+    두 가지 출처를 지원한다.
+      - measured : CSV의 group=calib 행을 회귀한 결과 (fit 이 채워짐)
+      - manual   : config.EXTERNAL_CALIBRATION 에 적어 둔 계수 (fit 이 None)
+
+    manual 은 직선성·LOD/LOQ 정보를 담지 못하므로 해당 값은 NaN 이 된다.
+    """
+
     compound: Compound
-    fit: LinearFit
+    fit: LinearFit | None = None
     rsd_by_level: dict[float, float] = field(default_factory=dict)
+    manual_slope: float | None = None
+    manual_intercept: float = 0.0
+
+    @property
+    def source(self) -> str:
+        return "measured" if self.fit is not None else "manual"
+
+    @property
+    def slope(self) -> float:
+        return self.fit.slope if self.fit is not None else float(self.manual_slope)
+
+    @property
+    def intercept(self) -> float:
+        return self.fit.intercept if self.fit is not None else self.manual_intercept
+
+    @property
+    def se_slope(self) -> float:
+        return self.fit.se_slope if self.fit is not None else float("nan")
+
+    @property
+    def r2(self) -> float:
+        return self.fit.r2 if self.fit is not None else float("nan")
+
+    def concentration_from_area(self, area: float) -> float:
+        if self.slope == 0:
+            return float("nan")
+        return (area - self.intercept) / self.slope
 
     @property
     def lod_ppm(self) -> float:
-        return self.fit.lod
+        return self.fit.lod if self.fit is not None else float("nan")
 
     @property
     def loq_ppm(self) -> float:
-        return self.fit.loq
+        return self.fit.loq if self.fit is not None else float("nan")
 
     @property
     def passes_linearity(self) -> bool:
-        return bool(self.fit.r2 >= QC.min_r2)
+        return bool(self.fit is not None and self.fit.r2 >= QC.min_r2)
 
 
 def build_calibrations(df: pd.DataFrame) -> dict[str, CalibrationResult]:
-    """증류수 바탕 검량선(Vial 1~4)을 성분별로 만든다."""
+    """외부 검량선을 성분별로 만든다.
+
+    CSV에 group=calib 행이 있으면 그것을 회귀하고, 없으면
+    config.EXTERNAL_CALIBRATION 에 적어 둔 계수로 대체한다.
+    """
     from .stats import rsd_percent
 
-    calib = df[df["group"] == CALIB_GROUP]
-    if calib.empty:
-        raise ValueError(
-            "검량선 데이터(group=calib)가 없습니다. "
-            "외부 검량선 없이는 변환 상수를 계산할 수 없습니다."
-        )
-
     results: dict[str, CalibrationResult] = {}
+    calib = df[df["group"] == CALIB_GROUP]
+
     for cmp_key in COMPOUND_ORDER:
-        sub = calib[calib["compound"] == cmp_key]
-        if sub.empty:
-            continue
-        level_mean = sub.groupby("spike_ppm")["peak_area"].mean()
-        fit = linear_fit(level_mean.index.values, level_mean.values)
-        rsds = {
-            float(lvl): rsd_percent(g["peak_area"].values)
-            for lvl, g in sub.groupby("spike_ppm")
-        }
-        results[cmp_key] = CalibrationResult(COMPOUNDS[cmp_key], fit, rsds)
+        sub = calib[calib["compound"] == cmp_key] if not calib.empty else calib
+        if not sub.empty and sub["spike_ppm"].nunique() >= 3:
+            level_mean = sub.groupby("spike_ppm")["peak_area"].mean()
+            fit = linear_fit(level_mean.index.values, level_mean.values)
+            rsds = {
+                float(lvl): rsd_percent(g["peak_area"].values)
+                for lvl, g in sub.groupby("spike_ppm")
+            }
+            results[cmp_key] = CalibrationResult(
+                COMPOUNDS[cmp_key], fit=fit, rsd_by_level=rsds
+            )
+        elif cmp_key in EXTERNAL_CALIBRATION:
+            slope, intercept = EXTERNAL_CALIBRATION[cmp_key]
+            results[cmp_key] = CalibrationResult(
+                COMPOUNDS[cmp_key], fit=None,
+                manual_slope=slope, manual_intercept=intercept,
+            )
+
+    if not results:
+        raise ValueError(
+            "외부 검량선이 없습니다.\n"
+            "  · CSV에 group=calib 행(농도 3수준 이상)을 넣거나,\n"
+            "  · config.py 의 EXTERNAL_CALIBRATION 에 (기울기, y절편)을 적으세요.\n"
+            "검량선이 없으면 표준물 첨가법 역산은 되지만 변환 상수는 계산할 수 없습니다."
+        )
     return results
 
 
@@ -148,7 +199,7 @@ class StandardAdditionResult:
         """외부 검량선법으로 구한 겉보기 농도 (간섭 미보정)."""
         if self.calibration is None:
             return float("nan")
-        return self.calibration.fit.concentration_from_area(self.a0_area)
+        return self.calibration.concentration_from_area(self.a0_area)
 
     @property
     def c_apparent_drink_ppm(self) -> float:
@@ -174,8 +225,8 @@ class StandardAdditionResult:
         app = self.c_apparent_vial_ppm
         # 겉보기 농도의 오차는 검량선 기울기 오차에서 주로 온다.
         se_app = (
-            abs(app) * self.calibration.fit.se_slope / abs(self.calibration.fit.slope)
-            if self.calibration.fit.slope
+            abs(app) * self.calibration.se_slope / abs(self.calibration.slope)
+            if self.calibration.slope
             else float("nan")
         )
         _, se = propagate_ratio(self.c_vial_ppm, self.se_c_vial_ppm, app, se_app)
@@ -196,9 +247,9 @@ class StandardAdditionResult:
         1 보다 작으면 매트릭스가 응답을 억제한 것(이온화/흡광 방해),
         1 보다 크면 증강. 이것이 표준물 첨가법이 실제로 보정해 주는 성분이다.
         """
-        if self.calibration is None or self.calibration.fit.slope == 0:
+        if self.calibration is None or self.calibration.slope == 0:
             return float("nan")
-        return self.fit.slope / self.calibration.fit.slope
+        return self.fit.slope / self.calibration.slope
 
     @property
     def matrix_effect_percent(self) -> float:

@@ -262,8 +262,31 @@ def test_negative_area_is_rejected(tmp_path):
 def test_missing_calibration_raises():
     df = simulate_peak_areas(SimulationSettings(seed=3))
     only_samples = df[df["group"] == "sample"]
-    with pytest.raises(ValueError, match="검량선 데이터"):
+    with pytest.raises(ValueError, match="외부 검량선이 없습니다"):
         an.build_calibrations(only_samples)
+
+
+def test_manual_calibration_fills_in_when_no_calib_rows(monkeypatch):
+    """검량선 행이 없어도 config 에 계수를 넣어 두면 변환 상수까지 계산된다."""
+    from hplc.simulate import RESPONSE_FACTOR
+
+    monkeypatch.setattr(
+        an, "EXTERNAL_CALIBRATION",
+        {k: (v, 0.0) for k, v in RESPONSE_FACTOR.items()},
+    )
+    df = simulate_peak_areas(SimulationSettings(seed=11))
+    only_samples = df[df["group"] == "sample"]
+
+    cals = an.build_calibrations(only_samples)
+    assert all(c.source == "manual" for c in cals.values())
+    assert all(c.fit is None for c in cals.values())
+    assert all(not math.isfinite(c.r2) for c in cals.values())
+
+    results = an.run_standard_addition(only_samples, cals)
+    assert len(results) == len(DRINKS) * len(COMPOUNDS)
+    for r in results:
+        assert math.isfinite(r.conversion_constant)
+        assert math.isfinite(r.c_drink_ppm)
 
 
 def test_truth_table_shape():

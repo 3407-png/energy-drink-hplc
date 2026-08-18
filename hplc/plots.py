@@ -86,7 +86,11 @@ DRINK_COLORS = ["#2E7D8F", "#C05746", "#6B7F3E"]
 def plot_calibrations(
     calibrations: dict[str, CalibrationResult], outdir: Path
 ) -> Path:
-    keys = [k for k in COMPOUND_ORDER if k in calibrations]
+    # 계수만 입력된 검량선은 그릴 점이 없으므로 제외한다
+    keys = [k for k in COMPOUND_ORDER
+            if k in calibrations and calibrations[k].fit is not None]
+    if not keys:
+        return None
     fig, axes = plt.subplots(1, len(keys), figsize=(4.0 * len(keys), 3.4))
     if len(keys) == 1:
         axes = [axes]

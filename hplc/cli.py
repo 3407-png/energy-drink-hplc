@@ -194,7 +194,9 @@ def cmd_analyze(args) -> int:
     figures: list[Path] = []
     if not args.no_plots:
         plots.setup_style()
-        figures.append(plots.plot_calibrations(cals, outdir))
+        cal_fig = plots.plot_calibrations(cals, outdir)
+        if cal_fig is not None:      # 검량선을 계수로만 넣은 경우 그릴 점이 없다
+            figures.append(cal_fig)
         figures.extend(plots.plot_standard_addition(results, outdir))
         figures.append(plots.plot_conversion_constants(results, outdir))
         figures.append(plots.plot_residuals(results, outdir))
