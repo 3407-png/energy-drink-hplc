@@ -205,6 +205,8 @@ def plot_standard_addition(
 def plot_conversion_constants(
     results: list[StandardAdditionResult], outdir: Path
 ) -> Path:
+    if not any(math.isfinite(r.conversion_constant) for r in results):
+        return None       # 검량선이 없어 그릴 값이 없다
     drinks = sorted({r.drink.key for r in results})
     keys = [k for k in COMPOUND_ORDER if any(r.compound.key == k for r in results)]
     lookup = {(r.drink.key, r.compound.key): r for r in results}

@@ -198,8 +198,12 @@ def cmd_analyze(args) -> int:
         if cal_fig is not None:      # 검량선을 계수로만 넣은 경우 그릴 점이 없다
             figures.append(cal_fig)
         figures.extend(plots.plot_standard_addition(results, outdir))
-        figures.append(plots.plot_conversion_constants(results, outdir))
+        conv_fig = plots.plot_conversion_constants(results, outdir)
+        if conv_fig is not None:
+            figures.append(conv_fig)
         figures.append(plots.plot_residuals(results, outdir))
+
+    warns.extend(an.calibration_missing_note(cals))
 
     md = report.build_report(
         cals, results,
@@ -222,11 +226,14 @@ def cmd_analyze(args) -> int:
     print("성분별 역산 결과 (음료 원액 기준)")
     print("-" * 68)
     for r in results:
+        import math as _math
+        f_txt = (f"f={r.conversion_constant:>6.3f}"
+                 if _math.isfinite(r.conversion_constant) else "f=     -")
         print(
             f"  {r.drink.name_ko:<16} {r.compound.name_ko:<10} "
             f"{r.c_drink_ppm:>8.1f} ppm   "
             f"{r.mg_per_serving:>7.1f} mg/캔   "
-            f"f={r.conversion_constant:>6.3f}   R²={r.fit.r2:.4f}"
+            f"{f_txt}   R²={r.fit.r2:.4f}"
         )
     print("-" * 68)
     print()

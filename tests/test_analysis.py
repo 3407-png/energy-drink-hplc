@@ -259,11 +259,25 @@ def test_negative_area_is_rejected(tmp_path):
         dataio.load_peak_areas(p)
 
 
-def test_missing_calibration_raises():
+def test_missing_calibration_still_yields_concentrations():
+    """검량선이 없어도 x절편 역산은 그대로 되어야 한다.
+
+    표준물 첨가법의 농도 산출은 검량선을 전혀 쓰지 않는다. 검량선이 없다고
+    분석 전체를 중단시키면 멀쩡한 결과까지 버리게 된다.
+    """
     df = simulate_peak_areas(SimulationSettings(seed=3))
     only_samples = df[df["group"] == "sample"]
-    with pytest.raises(ValueError, match="외부 검량선이 없습니다"):
-        an.build_calibrations(only_samples)
+
+    cals = an.build_calibrations(only_samples)
+    assert cals == {}
+    assert an.calibration_missing_note(cals), "안내 문구가 나와야 한다"
+
+    results = an.run_standard_addition(only_samples, cals)
+    assert len(results) == len(DRINKS) * len(COMPOUNDS)
+    for r in results:
+        assert math.isfinite(r.c_drink_ppm) and r.c_drink_ppm > 0
+        assert r.calibration is None
+        assert not math.isfinite(r.conversion_constant)   # 계산 불가는 NaN 으로
 
 
 def test_manual_calibration_fills_in_when_no_calib_rows(monkeypatch):

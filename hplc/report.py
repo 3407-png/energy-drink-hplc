@@ -258,12 +258,20 @@ def build_report(
 
     parts.append("## 1. 외부 검량선 (증류수 바탕)")
     parts.append("")
-    parts.append(calibration_table(cals))
-    parts.append("")
-    parts.append(
-        "LOD/LOQ는 ICH Q2(R2)의 검량선 기반 산정식(3.3σ/S, 10σ/S)을 따랐으며, "
-        "σ로는 y절편의 표준오차를 사용하였다."
-    )
+    if cals:
+        parts.append(calibration_table(cals))
+        parts.append("")
+        parts.append(
+            "LOD/LOQ는 ICH Q2(R2)의 검량선 기반 산정식(3.3σ/S, 10σ/S)을 따랐으며, "
+            "σ로는 ய절편의 표준오차를 사용하였다.".replace("ய", "y")
+        )
+    else:
+        parts.append(
+            "**외부 검량선 데이터가 없어 이 절은 비어 있다.**\n\n"
+            "표준물 첨가법의 x절편 역산은 검량선 없이 성립하므로 아래 2·3절의 농도는 "
+            "그대로 유효하다. 검량선이 필요한 것은 '외부 검량선으로 읽은 겉보기 농도'와 "
+            "그것을 쓰는 변환 상수(4절)뿐이다."
+        )
     parts.append("")
 
     parts.append("## 2. 표준물 첨가법 회귀 및 x절편 역산")
@@ -285,7 +293,14 @@ def build_report(
 
     parts.append("## 4. 변환 상수 및 매트릭스 간섭 정량화")
     parts.append("")
-    parts.append(conversion_table(results))
+    if cals:
+        parts.append(conversion_table(results))
+    else:
+        parts.append(
+            "외부 검량선이 없어 변환 상수를 계산하지 못했다. "
+            "CSV에 `group=calib` 행을 추가하거나 `config.py` 의 "
+            "`EXTERNAL_CALIBRATION` 에 (기울기, y절편)을 적으면 이 표가 채워진다."
+        )
     parts.append("")
     parts.append(
         "**변환 상수 f = (첨가법으로 역산한 참 농도) / (외부 검량선으로 읽은 겉보기 농도)**\n\n"

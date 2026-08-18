@@ -129,14 +129,25 @@ def build_calibrations(df: pd.DataFrame) -> dict[str, CalibrationResult]:
                 manual_slope=slope, manual_intercept=intercept,
             )
 
-    if not results:
-        raise ValueError(
-            "외부 검량선이 없습니다.\n"
-            "  · CSV에 group=calib 행(농도 3수준 이상)을 넣거나,\n"
-            "  · config.py 의 EXTERNAL_CALIBRATION 에 (기울기, y절편)을 적으세요.\n"
-            "검량선이 없으면 표준물 첨가법 역산은 되지만 변환 상수는 계산할 수 없습니다."
-        )
+    # 검량선이 하나도 없어도 멈추지 않는다.
+    # 표준물 첨가법의 x절편 역산은 검량선 없이 성립하므로, 농도는 그대로 나온다.
+    # 검량선이 필요한 것은 '겉보기 농도'와 그것을 쓰는 변환 상수뿐이다.
     return results
+
+
+def calibration_missing_note(calibrations: dict[str, CalibrationResult]) -> list[str]:
+    """검량선이 없는 성분에 대한 안내 문구."""
+    missing = [c for c in COMPOUND_ORDER if c not in calibrations]
+    if not missing:
+        return []
+    names = ", ".join(COMPOUNDS[c].name_ko for c in missing)
+    return [
+        f"[{names}] 외부 검량선이 없어 변환 상수를 계산하지 못했습니다. "
+        "표준물 첨가법 농도(x절편 역산)는 검량선 없이도 유효하므로 그대로 쓰시면 됩니다.\n"
+        "    변환 상수까지 구하려면 둘 중 하나를 하세요.\n"
+        "      · CSV에 group=calib 행(농도 3수준 이상)을 추가한다\n"
+        "      · config.py 의 EXTERNAL_CALIBRATION 에 (기울기, y절편)을 적는다"
+    ]
 
 
 # ---------------------------------------------------------------------------
