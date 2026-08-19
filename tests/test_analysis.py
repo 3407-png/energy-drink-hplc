@@ -307,3 +307,52 @@ def test_truth_table_shape():
     t = truth_table()
     assert len(t) == len(DRINKS) * len(COMPOUNDS)
     assert {"true_drink_ppm", "matrix_response", "additive_offset_area"} <= set(t.columns)
+
+
+# ---------------------------------------------------------------------------
+# Colab 노트북
+# ---------------------------------------------------------------------------
+
+def test_colab_notebook_matches_current_source():
+    """노트북에 심어 둔 코드가 저장소 소스와 같은지 확인한다.
+
+    colab.ipynb 는 tools/build_colab.py 가 생성한다. 코드를 고치고 다시
+    빌드하지 않으면 노트북만 옛 코드를 담은 채 남아, Colab 사용자만
+    조용히 다른 결과를 보게 된다. 그것을 막는 검사다.
+
+    실패하면:  python tools/build_colab.py
+    """
+    import base64
+    import io
+    import json
+    import zipfile
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent
+    nb_path = root / "colab.ipynb"
+    assert nb_path.exists(), "colab.ipynb 가 없습니다"
+
+    nb = json.loads(nb_path.read_text(encoding="utf-8"))
+    cell = next(
+        c for c in nb["cells"]
+        if c["cell_type"] == "code" and any("PROJECT_ZIP_B64" in l for l in c["source"])
+    )
+    ns: dict = {}
+    src = "".join(cell["source"])
+    # base64 리터럴 정의부만 떼어내 평가한다
+    start = src.index("PROJECT_ZIP_B64")
+    end = src.index(")", src.index("(", start)) + 1
+    exec(src[start:end], ns)
+
+    with zipfile.ZipFile(io.BytesIO(base64.b64decode(ns["PROJECT_ZIP_B64"]))) as zf:
+        embedded = {n: zf.read(n) for n in zf.namelist()}
+
+    stale = [
+        name for name, blob in embedded.items()
+        if (root / name).read_bytes() != blob
+    ]
+    assert not stale, (
+        "노트북에 심긴 코드가 저장소 소스와 다릅니다: "
+        + ", ".join(sorted(stale))
+        + "\n  python tools/build_colab.py 를 실행해 노트북을 다시 만드세요."
+    )
