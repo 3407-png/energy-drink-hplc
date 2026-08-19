@@ -1,0 +1,110 @@
+﻿# 제로 에너지 드링크 HPLC 실측 피크 면적
+#
+# 출처 : 실험 스프레드시트 (A=몬스터, B=넷플릭스, C=와이즐리)
+# 조건 : LPGE, 0.1% 인산수용액:ACN = 70:30, 1.0 mL/min, 40 C, 230 nm, run 15 min
+# 전처리: 음료 원액 1 mL -> 10 mL 정용 (희석 10배), 0.45 um 여과
+# 주입 : 바이알당 4회
+#
+# 주의 1) 증류수 바탕 검량선(group=calib) 행이 없습니다.
+#         표준물 첨가법 농도 역산은 그대로 되지만 변환 상수는 계산되지 않습니다.
+#         검량선을 측정했다면 group=calib, sample=STD 행을 아래에 추가하세요.
+# 주의 2) retention_min 은 비어 있습니다. 채우면 피크 오동정을 자동 점검합니다.
+#
+# 이 파일은 실측값입니다. 모의 데이터가 아닙니다.
+group,sample,compound,spike_ppm,injection,retention_min,peak_area
+sample,monster,caffeine,0,1,,437651
+sample,monster,caffeine,0,2,,437120
+sample,monster,caffeine,0,3,,437654
+sample,monster,caffeine,0,4,,438357
+sample,monster,caffeine,20,1,,694581
+sample,monster,caffeine,20,2,,694048
+sample,monster,caffeine,20,3,,696137
+sample,monster,caffeine,20,4,,693493
+sample,monster,caffeine,40,1,,877518
+sample,monster,caffeine,40,2,,876243
+sample,monster,caffeine,40,3,,875718
+sample,monster,caffeine,40,4,,876085
+sample,monster,caffeine,60,1,,1099699
+sample,monster,caffeine,60,2,,1096044
+sample,monster,caffeine,60,3,,1095991
+sample,monster,caffeine,60,4,,1096112
+sample,netflix,caffeine,0,1,,619830
+sample,netflix,caffeine,0,2,,620858
+sample,netflix,caffeine,0,3,,619200
+sample,netflix,caffeine,0,4,,620273
+sample,netflix,caffeine,20,1,,927728
+sample,netflix,caffeine,20,2,,925987
+sample,netflix,caffeine,20,3,,928597
+sample,netflix,caffeine,20,4,,925299
+sample,netflix,caffeine,40,1,,1134815
+sample,netflix,caffeine,40,2,,1133490
+sample,netflix,caffeine,40,3,,1131622
+sample,netflix,caffeine,40,4,,1132423
+sample,netflix,caffeine,60,1,,1341855
+sample,netflix,caffeine,60,2,,1338513
+sample,netflix,caffeine,60,3,,1340695
+sample,netflix,caffeine,60,4,,1343951
+sample,wisely,caffeine,0,1,,492531
+sample,wisely,caffeine,0,2,,492125
+sample,wisely,caffeine,0,3,,492380
+sample,wisely,caffeine,0,4,,493111
+sample,wisely,caffeine,20,1,,711255
+sample,wisely,caffeine,20,2,,711963
+sample,wisely,caffeine,20,3,,710956
+sample,wisely,caffeine,20,4,,710955
+sample,wisely,caffeine,40,1,,912864
+sample,wisely,caffeine,40,2,,915126
+sample,wisely,caffeine,40,3,,915681
+sample,wisely,caffeine,40,4,,913572
+sample,wisely,caffeine,60,1,,1123183
+sample,wisely,caffeine,60,2,,1126015
+sample,wisely,caffeine,60,3,,1124071
+sample,wisely,caffeine,60,4,,1122960
+sample,monster,sodium_benzoate,0,1,,2717235
+sample,monster,sodium_benzoate,0,2,,2714351
+sample,monster,sodium_benzoate,0,3,,2716268
+sample,monster,sodium_benzoate,0,4,,2720709
+sample,monster,sodium_benzoate,20,1,,3863132
+sample,monster,sodium_benzoate,20,2,,3859388
+sample,monster,sodium_benzoate,20,3,,3871326
+sample,monster,sodium_benzoate,20,4,,3855406
+sample,monster,sodium_benzoate,40,1,,4550935
+sample,monster,sodium_benzoate,40,2,,4543319
+sample,monster,sodium_benzoate,40,3,,4539896
+sample,monster,sodium_benzoate,40,4,,4543040
+sample,monster,sodium_benzoate,60,1,,5527175
+sample,monster,sodium_benzoate,60,2,,5506161
+sample,monster,sodium_benzoate,60,3,,5505624
+sample,monster,sodium_benzoate,60,4,,5505893
+sample,netflix,sodium_benzoate,0,1,,1453610
+sample,netflix,sodium_benzoate,0,2,,1455503
+sample,netflix,sodium_benzoate,0,3,,1449669
+sample,netflix,sodium_benzoate,0,4,,1454365
+sample,netflix,sodium_benzoate,20,1,,2548620
+sample,netflix,sodium_benzoate,20,2,,2539366
+sample,netflix,sodium_benzoate,20,3,,2545037
+sample,netflix,sodium_benzoate,20,4,,2537202
+sample,netflix,sodium_benzoate,40,1,,3366695
+sample,netflix,sodium_benzoate,40,2,,3360721
+sample,netflix,sodium_benzoate,40,3,,3355585
+sample,netflix,sodium_benzoate,40,4,,3357595
+sample,netflix,sodium_benzoate,60,1,,4175816
+sample,netflix,sodium_benzoate,60,2,,4168230
+sample,netflix,sodium_benzoate,60,3,,4169687
+sample,netflix,sodium_benzoate,60,4,,4179542
+sample,wisely,sodium_benzoate,0,1,,836809
+sample,wisely,sodium_benzoate,0,2,,835196
+sample,wisely,sodium_benzoate,0,3,,835124
+sample,wisely,sodium_benzoate,0,4,,835188
+sample,wisely,sodium_benzoate,20,1,,1672944
+sample,wisely,sodium_benzoate,20,2,,1672927
+sample,wisely,sodium_benzoate,20,3,,1671280
+sample,wisely,sodium_benzoate,20,4,,1671071
+sample,wisely,sodium_benzoate,40,1,,2470650
+sample,wisely,sodium_benzoate,40,2,,2472376
+sample,wisely,sodium_benzoate,40,3,,2474713
+sample,wisely,sodium_benzoate,40,4,,2466702
+sample,wisely,sodium_benzoate,60,1,,3300000
+sample,wisely,sodium_benzoate,60,2,,3303311
+sample,wisely,sodium_benzoate,60,3,,3297073
+sample,wisely,sodium_benzoate,60,4,,3292992
